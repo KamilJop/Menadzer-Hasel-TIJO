@@ -1,72 +1,66 @@
-"""Cryptographic operations including Argon2id key derivation and AES-256-GCM encryption."""
+"""Cryptographic facade and orchestrator for key derivation and data encryption."""
 
 from __future__ import annotations
 
-import os
-import secrets
-
-from argon2.exceptions import Argon2Error
-from argon2.low_level import Type, hash_secret_raw
-from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-
-from core.argon2_config import (
+from core.argon2_config import Argon2Config
+from core.crypto_constants import (
     AES_256_KEY_SIZE_BYTES,
     AES_GCM_NONCE_SIZE_BYTES,
     DEFAULT_SALT_SIZE_BYTES,
-    Argon2Config,
 )
+from core.crypto_interfaces import BaseDataEncryptor, BaseKeyDerivator
+from core.data_encryptor import DataEncryptor
 from core.encrypted_payload import EncryptedPayload
 from core.exceptions import (
     CryptoError,
     DecryptionError,
-    InvalidKeyError,
-    InvalidPasswordError,
 )
+from core.key_derivator import KeyDerivator
 
 
 class CryptoEngine:
-    """Core cryptographic engine implementing Argon2id KDF and AES-256-GCM AEAD."""
+    """Unified cryptographic facade orchestrating Key Derivation and Data Encryption services."""
 
-    DEFAULT_CONFIG: Argon2Config = Argon2Config()
+    _default_derivator: KeyDerivator = KeyDerivator()
+    _default_encryptor: DataEncryptor = DataEncryptor()
 
-    @staticmethod
-    def generate_salt(length: int = DEFAULT_SALT_SIZE_BYTES) -> bytes:
-        """Generates cryptographically strong random salt bytes.
-
-        Args:
-            length: Length in bytes of the salt (default: 16 bytes).
-
-        Raises:
-            CryptoError: If requested length is less than 16 bytes.
-
-        Returns:
-            Randomly generated salt bytes.
-        """
-        if length < DEFAULT_SALT_SIZE_BYTES:
-            raise CryptoError(
-                f"Salt length must be at least {DEFAULT_SALT_SIZE_BYTES} bytes, got {length}."
-            )
-        return secrets.token_bytes(length)
-
-    @staticmethod
-    def generate_nonce(length: int = AES_GCM_NONCE_SIZE_BYTES) -> bytes:
-        """Generates a cryptographically strong unique nonce for AES-GCM.
+    def __init__(
+        self,
+        key_derivator: BaseKeyDerivator | None = None,
+        data_encryptor: BaseDataEncryptor | None = None,
+    ) -> None:
+        """Initializes the facade with injectable derivator and encryptor providers.
 
         Args:
-            length: Nonce length in bytes (standard: 12 bytes).
+            key_derivator: Key derivation provider implementing BaseKeyDerivator.
+            data_encryptor: Data encryption provider implementing BaseDataEncryptor.
+        """
+        self.key_derivator = key_derivator or self._default_derivator
+        self.data_encryptor = data_encryptor or self._default_encryptor
 
-        Raises:
-            CryptoError: If requested length is not exactly 12 bytes.
+    @classmethod
+    def generate_salt(cls, length: int = DEFAULT_SALT_SIZE_BYTES) -> bytes:
+        """Generates random salt bytes delegating to KeyDerivator.
+
+        Args:
+            length: Salt length in bytes.
 
         Returns:
-            Randomly generated nonce bytes.
+            Random salt bytes.
         """
-        if length != AES_GCM_NONCE_SIZE_BYTES:
-            raise CryptoError(
-                f"AES-GCM nonce length must be exactly {AES_GCM_NONCE_SIZE_BYTES} bytes, got {length}."
-            )
-        return os.urandom(length)
+        return cls._default_derivator.generate_salt(length)
+
+    @classmethod
+    def generate_nonce(cls, length: int = AES_GCM_NONCE_SIZE_BYTES) -> bytes:
+        """Generates unique nonce bytes delegating to DataEncryptor.
+
+        Args:
+            length: Nonce length in bytes.
+
+        Returns:
+            Random nonce bytes.
+        """
+        return cls._default_encryptor.generate_nonce(length)
 
     @classmethod
     def derive_key(
@@ -75,45 +69,81 @@ class CryptoEngine:
         salt: bytes,
         config: Argon2Config | None = None,
     ) -> bytes:
-        """Derives a 256-bit symmetric encryption key using Argon2id.
+        """Derives a symmetric key from a master password.
 
         Args:
-            password: User password as a UTF-8 string or raw bytes.
-            salt: Cryptographic salt bytes (at least 16 bytes).
+            password: User password as a string or raw bytes.
+            salt: Cryptographic salt bytes.
             config: Optional Argon2Config containing cost parameters.
 
-        Raises:
-            InvalidPasswordError: If password is empty or not a valid string/bytes.
-            CryptoError: If salt length is invalid or key derivation fails.
+        Returns:
+            Derived 32-byte key.
+        """
+        return cls._default_derivator.derive_key(password, salt, config)
+
+    @classmethod
+    def encrypt_payload(
+        cls,
+        data: bytes,
+        key: bytes,
+        salt: bytes,
+        nonce: bytes | None = None,
+        associated_data: bytes | None = None,
+    ) -> EncryptedPayload:
+        """Encrypts data and bundles ciphertext, nonce, and salt into an EncryptedPayload.
+
+        Args:
+            data: Plaintext binary payload.
+            key: 32-byte derived symmetric key.
+            salt: Salt bytes used to derive the key.
+            nonce: Optional 12-byte nonce.
+            associated_data: Optional authenticated data.
 
         Returns:
-            Derived symmetric key bytes (32 bytes).
+            EncryptedPayload containing ciphertext, nonce, and salt.
         """
-        if not password:
-            raise InvalidPasswordError("Password cannot be empty.")
-        if not isinstance(password, (str, bytes)):
-            raise InvalidPasswordError("Password must be a str or bytes instance.")
+        ciphertext, active_nonce = cls._default_encryptor.encrypt(
+            data=data,
+            key=key,
+            nonce=nonce,
+            associated_data=associated_data,
+        )
+        return EncryptedPayload(
+            ciphertext=ciphertext,
+            nonce=active_nonce,
+            salt=salt,
+        )
 
-        if not isinstance(salt, (bytes, bytearray)) or len(salt) < DEFAULT_SALT_SIZE_BYTES:
-            raise CryptoError(
-                f"Salt must be at least {DEFAULT_SALT_SIZE_BYTES} bytes, got {len(salt) if isinstance(salt, (bytes, bytearray)) else type(salt).__name__}."
-            )
+    @classmethod
+    def decrypt_payload(
+        cls,
+        payload: EncryptedPayload,
+        key: bytes,
+        associated_data: bytes | None = None,
+    ) -> bytes:
+        """Decrypts an EncryptedPayload using its encapsulated ciphertext and nonce.
 
-        active_config = config or cls.DEFAULT_CONFIG
-        secret_bytes = password.encode("utf-8") if isinstance(password, str) else password
+        Args:
+            payload: EncryptedPayload holding ciphertext and nonce.
+            key: 32-byte derived symmetric key.
+            associated_data: Optional authenticated data.
 
-        try:
-            return hash_secret_raw(
-                secret=secret_bytes,
-                salt=bytes(salt),
-                time_cost=active_config.time_cost,
-                memory_cost=active_config.memory_cost,
-                parallelism=active_config.parallelism,
-                hash_len=active_config.hash_len,
-                type=Type.ID,
-            )
-        except Argon2Error as err:
-            raise CryptoError(f"Key derivation failed: {err}") from err
+        Raises:
+            CryptoError: If payload is not an EncryptedPayload instance.
+            DecryptionError: If tag verification fails or data is corrupted.
+
+        Returns:
+            Decrypted plaintext bytes.
+        """
+        if not isinstance(payload, EncryptedPayload):
+            raise CryptoError("Payload must be an instance of EncryptedPayload.")
+
+        return cls._default_encryptor.decrypt(
+            ciphertext=payload.ciphertext,
+            key=key,
+            nonce=payload.nonce,
+            associated_data=associated_data,
+        )
 
     @classmethod
     def encrypt(
@@ -124,55 +154,26 @@ class CryptoEngine:
         salt: bytes | None = None,
         associated_data: bytes | None = None,
     ) -> EncryptedPayload:
-        """Encrypts data using AES-256-GCM with associated authenticated data.
+        """Convenience wrapper creating an EncryptedPayload.
 
         Args:
-            data: Plaintext binary payload to encrypt.
-            key: 32-byte derived symmetric key.
-            nonce: Optional 12-byte nonce (freshly generated if omitted).
-            salt: Optional cryptographic salt (freshly generated if omitted).
-            associated_data: Optional authenticated unencrypted data (AAD).
-
-        Raises:
-            InvalidKeyError: If key is not 32 bytes in length.
-            CryptoError: If provided nonce or salt is invalid, or encryption fails.
+            data: Plaintext data to encrypt.
+            key: 32-byte symmetric key.
+            nonce: Optional 12-byte nonce.
+            salt: Optional salt (generated if omitted).
+            associated_data: Optional authenticated data.
 
         Returns:
-            EncryptedPayload containing ciphertext, nonce, and derivation salt.
+            EncryptedPayload with ciphertext, nonce, and salt.
         """
-        if not isinstance(key, (bytes, bytearray)) or len(key) != AES_256_KEY_SIZE_BYTES:
-            raise InvalidKeyError(
-                f"AES-256 key must be exactly {AES_256_KEY_SIZE_BYTES} bytes, got {len(key) if isinstance(key, (bytes, bytearray)) else type(key).__name__}."
-            )
-
-        if nonce is None:
-            active_nonce = cls.generate_nonce()
-        else:
-            if not isinstance(nonce, (bytes, bytearray)) or len(nonce) != AES_GCM_NONCE_SIZE_BYTES:
-                raise CryptoError(
-                    f"Nonce must be exactly {AES_GCM_NONCE_SIZE_BYTES} bytes, got {len(nonce) if isinstance(nonce, (bytes, bytearray)) else type(nonce).__name__}."
-                )
-            active_nonce = bytes(nonce)
-
-        if salt is None:
-            active_salt = cls.generate_salt()
-        else:
-            if not isinstance(salt, (bytes, bytearray)) or len(salt) < DEFAULT_SALT_SIZE_BYTES:
-                raise CryptoError(
-                    f"Salt must be at least {DEFAULT_SALT_SIZE_BYTES} bytes, got {len(salt) if isinstance(salt, (bytes, bytearray)) else type(salt).__name__}."
-                )
-            active_salt = bytes(salt)
-
-        try:
-            aesgcm = AESGCM(key)
-            ciphertext = aesgcm.encrypt(active_nonce, data, associated_data)
-            return EncryptedPayload(
-                ciphertext=ciphertext,
-                nonce=active_nonce,
-                salt=active_salt,
-            )
-        except Exception as err:
-            raise CryptoError(f"Encryption failed: {err}") from err
+        active_salt = salt if salt is not None else cls.generate_salt()
+        return cls.encrypt_payload(
+            data=data,
+            key=key,
+            salt=active_salt,
+            nonce=nonce,
+            associated_data=associated_data,
+        )
 
     @classmethod
     def decrypt(
@@ -181,43 +182,17 @@ class CryptoEngine:
         key: bytes,
         associated_data: bytes | None = None,
     ) -> bytes:
-        """Decrypts and verifies an AES-256-GCM EncryptedPayload.
+        """Convenience wrapper decrypting an EncryptedPayload.
 
         Args:
             payload: EncryptedPayload holding ciphertext and nonce.
-            key: 32-byte derived symmetric key.
-            associated_data: Optional authenticated data that must match what was used for encryption.
-
-        Raises:
-            InvalidKeyError: If key is not 32 bytes in length.
-            CryptoError: If payload or nonce parameters are invalid.
-            DecryptionError: If authentication tag verification fails or data is corrupted.
+            key: 32-byte symmetric key.
+            associated_data: Optional authenticated data.
 
         Returns:
             Decrypted plaintext bytes.
         """
-        if not isinstance(payload, EncryptedPayload):
-            raise CryptoError("Payload must be an instance of EncryptedPayload.")
-
-        if not isinstance(key, (bytes, bytearray)) or len(key) != AES_256_KEY_SIZE_BYTES:
-            raise InvalidKeyError(
-                f"AES-256 key must be exactly {AES_256_KEY_SIZE_BYTES} bytes, got {len(key) if isinstance(key, (bytes, bytearray)) else type(key).__name__}."
-            )
-
-        if len(payload.nonce) != AES_GCM_NONCE_SIZE_BYTES:
-            raise CryptoError(
-                f"Nonce must be exactly {AES_GCM_NONCE_SIZE_BYTES} bytes, got {len(payload.nonce)}."
-            )
-
-        try:
-            aesgcm = AESGCM(key)
-            return aesgcm.decrypt(payload.nonce, payload.ciphertext, associated_data)
-        except InvalidTag as err:
-            raise DecryptionError(
-                "Decryption failed: Authentication tag verification failed or data is corrupted."
-            ) from err
-        except Exception as err:
-            raise DecryptionError(f"Decryption failed: {err}") from err
+        return cls.decrypt_payload(payload=payload, key=key, associated_data=associated_data)
 
     @classmethod
     def encrypt_text(
@@ -227,16 +202,19 @@ class CryptoEngine:
         salt: bytes | None = None,
         associated_data: bytes | None = None,
     ) -> EncryptedPayload:
-        """Convenience method to encrypt a UTF-8 string payload.
+        """Encrypts a UTF-8 text string into an EncryptedPayload.
 
         Args:
             text: Plaintext string to encrypt.
-            key: 32-byte derived symmetric key.
+            key: 32-byte symmetric key.
             salt: Optional salt to bundle with payload.
-            associated_data: Optional authenticated unencrypted data.
+            associated_data: Optional authenticated data.
+
+        Raises:
+            TypeError: If text is not a str.
 
         Returns:
-            EncryptedPayload containing encrypted string bytes.
+            EncryptedPayload containing ciphertext, nonce, and salt.
         """
         if not isinstance(text, str):
             raise TypeError(f"Expected text to be a str, got {type(text).__name__}.")
@@ -254,21 +232,28 @@ class CryptoEngine:
         key: bytes,
         associated_data: bytes | None = None,
     ) -> str:
-        """Convenience method to decrypt an EncryptedPayload into a UTF-8 string.
+        """Decrypts an EncryptedPayload into a UTF-8 string.
 
         Args:
             payload: EncryptedPayload holding ciphertext and nonce.
-            key: 32-byte derived symmetric key.
+            key: 32-byte symmetric key.
             associated_data: Optional authenticated data.
 
         Raises:
             DecryptionError: If decryption or UTF-8 decoding fails.
 
         Returns:
-            Decrypted plaintext UTF-8 string.
+            Decrypted plaintext string.
         """
         plaintext_bytes = cls.decrypt(payload=payload, key=key, associated_data=associated_data)
         try:
             return plaintext_bytes.decode("utf-8")
         except UnicodeDecodeError as err:
             raise DecryptionError(f"Failed to decode decrypted payload as UTF-8: {err}") from err
+
+
+__all__ = [
+    "CryptoEngine",
+    "DataEncryptor",
+    "KeyDerivator",
+]
