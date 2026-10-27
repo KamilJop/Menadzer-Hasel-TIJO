@@ -7,6 +7,7 @@ from typing import Any
 import uuid
 
 from core.category import Category
+from core.exceptions import InvalidEntryError
 from core.utils import get_utc_now_iso
 
 
@@ -69,7 +70,7 @@ class Entry:
             data: Dictionary containing key-value pairs matching Entry attributes.
 
         Raises:
-            KeyError: If required fields (title, username, password) are missing.
+            InvalidEntryError: If required fields (title, username, password) are missing.
 
         Returns:
             New Entry instance populated with data.
@@ -81,14 +82,17 @@ class Entry:
             category = Category.OTHER
 
         now_iso = get_utc_now_iso()
-        return cls(
-            id=data.get("id", str(uuid.uuid4())),
-            title=data["title"],
-            username=data["username"],
-            password=data["password"],
-            category=category,
-            url=data.get("url"),
-            notes=data.get("notes"),
-            created_at=data.get("created_at", now_iso),
-            updated_at=data.get("updated_at", now_iso),
-        )
+        try:
+            return cls(
+                id=data.get("id", str(uuid.uuid4())),
+                title=data["title"],
+                username=data["username"],
+                password=data["password"],
+                category=category,
+                url=data.get("url"),
+                notes=data.get("notes"),
+                created_at=data.get("created_at", now_iso),
+                updated_at=data.get("updated_at", now_iso),
+            )
+        except KeyError as err:
+            raise InvalidEntryError(f"Missing required entry field: {err}") from err

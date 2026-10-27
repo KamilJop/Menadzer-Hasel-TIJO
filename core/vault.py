@@ -8,6 +8,7 @@ from typing import Any
 
 from core.category import Category
 from core.entry import Entry
+from core.exceptions import DuplicateEntryError, EntryNotFoundError
 
 
 @dataclass
@@ -28,12 +29,12 @@ class Vault:
 
         Raises:
             TypeError: If entry is not an instance of Entry.
-            ValueError: If an entry with the same identifier already exists.
+            DuplicateEntryError: If an entry with the same identifier already exists.
         """
         if not isinstance(entry, Entry):
             raise TypeError(f"Expected Entry instance, got {type(entry).__name__}.")
         if self.get_entry(entry.id) is not None:
-            raise ValueError(f"Entry with ID '{entry.id}' already exists.")
+            raise DuplicateEntryError(entry.id)
         self.entries.append(entry)
 
     def get_entry(self, entry_id: str) -> Entry | None:
@@ -55,7 +56,7 @@ class Vault:
                 return item
         return None
 
-    def update_entry(self, entry: Entry) -> bool:
+    def update_entry(self, entry: Entry) -> None:
         """Updates an existing entry in the vault and refreshes its timestamp.
 
         Args:
@@ -63,9 +64,7 @@ class Vault:
 
         Raises:
             TypeError: If entry is not an instance of Entry.
-
-        Returns:
-            True if the entry was found and updated, False otherwise.
+            EntryNotFoundError: If no entry with the specified identifier is found.
         """
         if not isinstance(entry, Entry):
             raise TypeError(f"Expected Entry instance, got {type(entry).__name__}.")
@@ -73,10 +72,10 @@ class Vault:
             if item.id == entry.id:
                 entry.mark_updated()
                 self.entries[index] = entry
-                return True
-        return False
+                return
+        raise EntryNotFoundError(entry.id)
 
-    def remove_entry(self, entry_id: str) -> bool:
+    def remove_entry(self, entry_id: str) -> None:
         """Removes an entry by its unique identifier.
 
         Args:
@@ -84,17 +83,15 @@ class Vault:
 
         Raises:
             TypeError: If entry_id is not a string.
-
-        Returns:
-            True if an entry was removed, False if not found.
+            EntryNotFoundError: If no entry with the specified identifier is found.
         """
         if not isinstance(entry_id, str):
             raise TypeError(f"Expected entry_id to be a str, got {type(entry_id).__name__}.")
         for index, item in enumerate(self.entries):
             if item.id == entry_id:
                 del self.entries[index]
-                return True
-        return False
+                return
+        raise EntryNotFoundError(entry_id)
 
     def clear(self) -> None:
         """Removes all entries from the vault."""
