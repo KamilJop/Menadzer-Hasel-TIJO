@@ -85,3 +85,15 @@ class ExportError(StorageError):
 
 class VaultImportError(StorageError):
     """Raised when importing vault entries fails or schema is incompatible."""
+
+
+# Generator Exceptions
+
+
+class GeneratorError(PasswordManagerError):
+    """Base exception for password generator operations and configuration issues."""
+
+
+class InvalidGeneratorConfigError(GeneratorError):
+    """Raised when generator configuration parameters are invalid or contradictory."""
+
