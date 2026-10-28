@@ -82,7 +82,6 @@ class AppController:
         self._close_active_window()
         window = MainWindow(
             vault=vault,
-            password=password,
             vault_path=path,
             repository=self._repository,
         )
