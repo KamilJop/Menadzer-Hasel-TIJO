@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import sys
 
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QApplication
 
+from ui.resources.style_loader import load_app_stylesheets
 from ui.views.main_window import MainWindow
 
 
@@ -19,6 +21,8 @@ def create_application() -> QApplication:
     app.setApplicationName("Password Manager")
     app.setApplicationDisplayName("Password Manager")
     app.setOrganizationName("Yuris")
+    app.setFont(QFont("Segoe UI", 10))
+    app.setStyleSheet(load_app_stylesheets())
     return app
 
 
