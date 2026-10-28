@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-AES_256_KEY_SIZE_BYTES: int = 32
-AES_GCM_NONCE_SIZE_BYTES: int = 12
-DEFAULT_SALT_SIZE_BYTES: int = 16
+from core.crypto_constants import (
+    AES_256_KEY_SIZE_BYTES,
+    DEFAULT_SALT_SIZE_BYTES,
+)
 
 
 @dataclass(frozen=True)
