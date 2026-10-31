@@ -1,5 +1,6 @@
 /* Base application dark styling */
-QMainWindow {
+QMainWindow,
+QDialog {
     background-color: #121317;
 }
 
@@ -51,6 +52,27 @@ QPushButton[variant="secondary"]:hover {
     background-color: #3f3f46;
 }
 
+/* Floating Action Button (FAB) */
+QPushButton[variant="fab"] {
+    background-color: #4f46e5;
+    color: #ffffff;
+    border: 1px solid #6366f1;
+    border-radius: 14px;
+    font-size: 28px;
+    font-weight: 400;
+    text-align: center;
+    padding: 0;
+}
+
+QPushButton[variant="fab"]:hover {
+    background-color: #6366f1;
+    border-color: #818cf8;
+}
+
+QPushButton[variant="fab"]:pressed {
+    background-color: #4338ca;
+}
+
 /* Minimalist / Ghost button */
 QPushButton[variant="minimal"] {
     background-color: transparent;
@@ -60,6 +82,56 @@ QPushButton[variant="minimal"] {
     padding: 6px 14px;
     font-size: 13px;
     font-weight: 500;
+}
+
+/* Icon Action Button (e.g. copy, eye) */
+QPushButton[variant="icon-btn"] {
+    background-color: #1f212d;
+    border: 1px solid #36394c;
+    border-radius: 6px;
+    padding: 4px;
+}
+
+QPushButton[variant="icon-btn"]:hover {
+    background-color: #2b2e40;
+    border-color: #525672;
+}
+
+QPushButton[variant="icon-btn"]:pressed {
+    background-color: #171822;
+}
+
+/* Danger Icon Action Button (e.g. delete X) */
+QPushButton[variant="icon-btn-danger"] {
+    background-color: #1f212d;
+    border: 1px solid #36394c;
+    border-radius: 6px;
+    padding: 4px;
+}
+
+QPushButton[variant="icon-btn-danger"]:hover {
+    background-color: #2b1518;
+    border-color: #ef4444;
+}
+
+QPushButton[variant="icon-btn-danger"]:pressed {
+    background-color: #3b171c;
+}
+
+/* Ghost Icon Action Button (e.g. inline eye toggle) */
+QPushButton[variant="icon-btn-ghost"] {
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QPushButton[variant="icon-btn-ghost"]:hover {
+    background-color: #242634;
+}
+
+QPushButton[variant="icon-btn-ghost"]:pressed {
+    background-color: #1f202b;
 }
 
 QPushButton[variant="minimal"]:hover {
@@ -79,6 +151,12 @@ QLabel {
     font-size: 14px;
 }
 
+QLabel[variant="dialog-title"] {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+}
+
 QLabel[variant="muted"] {
     color: #a1a1aa;
     font-size: 12px;
@@ -94,6 +172,123 @@ QFrame[variant="card"] {
     background-color: #15161d;
     border: 1px solid #22242e;
     border-radius: 12px;
+}
+
+/* Entries Scroll Area and List Container */
+QScrollArea#entriesScrollArea {
+    background: transparent;
+    border: none;
+}
+
+QScrollArea#entriesScrollArea > QWidget > QWidget {
+    background: transparent;
+}
+
+QWidget#entriesContainer {
+    background: transparent;
+}
+
+/* Credential Entry Item Card */
+QFrame#entryCard,
+QFrame[variant="entry-card"],
+EntryCard {
+    background-color: #1a1b24;
+    border: 1.5px solid #3b3f54;
+    border-radius: 9px;
+}
+
+QFrame#entryCard:hover,
+QFrame[variant="entry-card"]:hover,
+EntryCard:hover {
+    border-color: #6366f1;
+    background-color: #1e202c;
+}
+
+/* Credential Entry Elements */
+QLabel[variant="entry-logo"] {
+    color: #a5b4fc;
+    font-weight: 700;
+    font-size: 11px;
+    background-color: #242634;
+    border-radius: 4px;
+    border: 1px solid #3b3f54;
+}
+
+QLabel[variant="entry-logo-pixmap"] {
+    background: transparent;
+    border: none;
+}
+
+QLabel[variant="entry-title"] {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    background: transparent;
+    border: none;
+}
+
+QLabel[variant="entry-separator"] {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 500;
+    background: transparent;
+    border: none;
+}
+
+QLabel[variant="entry-url"] {
+    font-size: 13px;
+    background: transparent;
+    border: none;
+}
+
+QLabel[variant="cred-tag"] {
+    color: #818cf8;
+    font-size: 13px;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+}
+
+QLineEdit[variant="credential-input"] {
+    background-color: #14151e;
+    color: #f4f4f5;
+    border: 1px solid #333647;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 13px;
+    selection-background-color: #4f46e5;
+    selection-color: #ffffff;
+}
+
+QLineEdit[variant="credential-input"]:hover {
+    border-color: #4b4f68;
+}
+
+QLineEdit[variant="credential-input"]:focus {
+    border-color: #6366f1;
+}
+
+QLabel[variant="entry-notes"] {
+    color: #f4f4f5;
+    font-size: 13px;
+    background: transparent;
+    border: none;
+    padding-top: 1px;
+}
+
+/* Toast Notification */
+QFrame#toastNotification {
+    background-color: #1e202c;
+    border: 1px solid #4f46e5;
+    border-radius: 8px;
+}
+
+QLabel[variant="toast-message"] {
+    color: #f4f4f5;
+    font-size: 13px;
+    font-weight: 500;
+    background: transparent;
+    border: none;
 }
 
 /* Responsive Layout Splitter */

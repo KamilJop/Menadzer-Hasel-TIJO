@@ -1,5 +1,7 @@
 /* Input fields dark styling */
-QLineEdit {
+QLineEdit,
+QComboBox,
+QPlainTextEdit {
     background-color: #18181b;
     border: 1.5px solid #3f3f46;
     border-radius: 8px;
@@ -10,13 +12,32 @@ QLineEdit {
     selection-color: #ffffff;
 }
 
-QLineEdit:hover {
+QLineEdit:hover,
+QComboBox:hover,
+QPlainTextEdit:hover {
     border: 1.5px solid #52525b;
 }
 
-QLineEdit:focus {
+QLineEdit:focus,
+QComboBox:focus,
+QPlainTextEdit:focus {
     border: 1.5px solid #6366f1;
     background-color: #18181b;
+}
+
+QComboBox::drop-down {
+    border: none;
+    padding-right: 12px;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #18181b;
+    border: 1.5px solid #3f3f46;
+    border-radius: 8px;
+    selection-background-color: #4f46e5;
+    selection-color: #ffffff;
+    color: #f4f4f5;
+    padding: 4px;
 }
 
 /* Dynamic error state */
@@ -34,7 +55,9 @@ QLineEdit[hasError="true"]:focus {
     background-color: #241618;
 }
 
-QLineEdit:disabled {
+QLineEdit:disabled,
+QComboBox:disabled,
+QPlainTextEdit:disabled {
     background-color: #27272a;
     border: 1.5px solid #27272a;
     color: #71717a;

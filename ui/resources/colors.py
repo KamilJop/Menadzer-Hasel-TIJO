@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from PyQt6.QtGui import QColor
 
+from core.strength_level import StrengthLevel
+
 
 class NavColors:
     """Color constants for category navigation items and sidebars."""
@@ -25,6 +27,43 @@ class NavColors:
     BADGE_ACTIVE_FG: QColor = QColor(230, 235, 255)
 
 
+class StrengthColors:
+    """Color palette definitions for password security strength tiers."""
+
+    VERY_WEAK: QColor = QColor(239, 68, 68)
+    WEAK: QColor = QColor(249, 115, 22)
+    FAIR: QColor = QColor(234, 179, 8)
+    STRONG: QColor = QColor(34, 197, 94)
+    VERY_STRONG: QColor = QColor(16, 185, 129)
+    EMPTY: QColor = QColor(39, 39, 42)
+    TEXT_MUTED: QColor = QColor(113, 113, 122)
+
+    @classmethod
+    def get_color(cls, level: StrengthLevel | None) -> QColor:
+        """Resolves theme QColor for the specified strength level.
+
+        Args:
+            level: StrengthLevel enum member or None for empty state.
+
+        Returns:
+            Resolved QColor instance.
+        """
+        match level:
+            case StrengthLevel.VERY_WEAK:
+                return cls.VERY_WEAK
+            case StrengthLevel.WEAK:
+                return cls.WEAK
+            case StrengthLevel.FAIR:
+                return cls.FAIR
+            case StrengthLevel.STRONG:
+                return cls.STRONG
+            case StrengthLevel.VERY_STRONG:
+                return cls.VERY_STRONG
+            case _:
+                return cls.EMPTY
+
+
 __all__ = [
     "NavColors",
+    "StrengthColors",
 ]

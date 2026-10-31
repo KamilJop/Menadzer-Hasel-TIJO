@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from core.category import Category
-from ui.components.category_nav_item import CategoryNavItem
+from ui.widgets.category_nav_item import CategoryNavItem
 
 
 class CategorySidebar(QWidget):

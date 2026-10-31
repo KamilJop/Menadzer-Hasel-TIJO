@@ -1,13 +1,21 @@
-"""Reusable custom UI components."""
+"""Compatibility module re-exporting widgets from ui.widgets."""
 
-from ui.components.category_nav_item import CategoryNavItem
-from ui.components.category_sidebar import CategorySidebar
-from ui.components.password_field import PasswordField
-from ui.components.text_field import CustomLineEdit
+from ui.widgets import (
+    CategoryNavItem,
+    CategorySidebar,
+    CustomLineEdit,
+    FloatingActionButton,
+    PasswordField,
+    StrengthBar,
+    ToastNotification,
+)
 
 __all__ = [
     "CategoryNavItem",
     "CategorySidebar",
     "CustomLineEdit",
+    "FloatingActionButton",
     "PasswordField",
+    "StrengthBar",
+    "ToastNotification",
 ]

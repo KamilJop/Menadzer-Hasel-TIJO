@@ -7,7 +7,7 @@ from pathlib import Path
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QLineEdit, QWidget
 
-from ui.components.text_field import CustomLineEdit
+from ui.widgets.text_field import CustomLineEdit
 
 
 class PasswordField(CustomLineEdit):

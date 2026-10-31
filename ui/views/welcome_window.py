@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 from core.vault import Vault
 from storage.interfaces import BaseVaultRepository
 from storage.repository import VaultRepository
-from ui.components import PasswordField
+from ui.widgets import PasswordField
 
 
 class WelcomeWindow(QWidget):

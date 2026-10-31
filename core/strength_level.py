@@ -23,6 +23,15 @@ class StrengthLevel(IntEnum):
         """
         return self.value
 
+    @property
+    def display_name(self) -> str:
+        """Human-readable display title for this security tier.
+
+        Returns:
+            Capitalized title string (e.g. 'Very Strong').
+        """
+        return self.name.replace("_", " ").title()
+
     def is_at_least(self, minimum_level: StrengthLevel) -> bool:
         """Checks if this level meets or exceeds the specified minimum level.
 
