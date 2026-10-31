@@ -1,6 +1,10 @@
 /* Base application dark styling */
 QMainWindow,
-QDialog {
+QDialog,
+LoginWindow,
+WelcomeWindow,
+QWidget#loginWindow,
+QWidget#welcomeWindow {
     background-color: #121317;
 }
 
@@ -266,6 +270,31 @@ QLineEdit[variant="credential-input"]:hover {
 
 QLineEdit[variant="credential-input"]:focus {
     border-color: #6366f1;
+}
+
+/* Search Bar Input */
+QLineEdit#searchBar,
+QLineEdit[variant="search-bar"] {
+    background-color: #1a1b24;
+    border: 1.5px solid #36394c;
+    border-radius: 8px;
+    padding: 4px 10px;
+    color: #f4f4f5;
+    font-size: 13px;
+    selection-background-color: #4f46e5;
+    selection-color: #ffffff;
+}
+
+QLineEdit#searchBar:hover,
+QLineEdit[variant="search-bar"]:hover {
+    border-color: #525672;
+    background-color: #1e202c;
+}
+
+QLineEdit#searchBar:focus,
+QLineEdit[variant="search-bar"]:focus {
+    border-color: #6366f1;
+    background-color: #1e202c;
 }
 
 QLabel[variant="entry-notes"] {

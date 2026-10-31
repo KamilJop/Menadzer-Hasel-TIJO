@@ -29,10 +29,12 @@ class EntryCard(QFrame):
 
     Attributes:
         copy_requested: Signal emitted when user copies credential text (text, field_name).
+        edit_requested: Signal emitted when user requests editing this credential entry.
         delete_requested: Signal emitted when user requests deleting this credential entry.
     """
 
     copy_requested = pyqtSignal(str, str)
+    edit_requested = pyqtSignal(Entry)
     delete_requested = pyqtSignal(Entry)
 
     def __init__(
@@ -54,6 +56,7 @@ class EntryCard(QFrame):
 
         icons_dir = Path(__file__).resolve().parent.parent / "resources" / "icons"
         self._copy_icon: QIcon = QIcon(str(icons_dir / "copy.svg"))
+        self._edit_icon: QIcon = QIcon(str(icons_dir / "edit.svg"))
         self._check_icon: QIcon = QIcon(str(icons_dir / "check.svg"))
         self._delete_icon: QIcon = QIcon(str(icons_dir / "delete.svg"))
         self._eye_open_icon: QIcon = QIcon(str(icons_dir / "eye_open.svg"))
@@ -94,8 +97,8 @@ class EntryCard(QFrame):
 
         layout.addLayout(info_col, stretch=1)
 
-        actions_col = self._create_actions_column()
-        layout.addLayout(actions_col)
+        actions_layout = self._create_actions_layout()
+        layout.addLayout(actions_layout)
 
     def _create_title_row(self) -> QHBoxLayout:
         """Constructs the header row containing logo, title, and optional URL link.
@@ -267,15 +270,25 @@ class EntryCard(QFrame):
         group.addWidget(copy_button)
         return group
 
-    def _create_actions_column(self) -> QVBoxLayout:
-        """Constructs the actions column containing the delete button.
+    def _create_actions_layout(self) -> QHBoxLayout:
+        """Constructs the actions row containing the edit and delete buttons.
 
         Returns:
-            Configured QVBoxLayout instance.
+            Configured QHBoxLayout instance.
         """
-        actions_col = QVBoxLayout()
-        actions_col.setContentsMargins(0, 0, 0, 0)
-        actions_col.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+        actions_layout = QHBoxLayout()
+        actions_layout.setContentsMargins(0, 0, 0, 0)
+        actions_layout.setSpacing(6)
+        actions_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+
+        edit_button = QPushButton(self)
+        edit_button.setProperty("variant", "icon-btn")
+        edit_button.setFixedSize(26, 26)
+        edit_button.setIcon(self._edit_icon)
+        edit_button.setIconSize(QSize(13, 13))
+        edit_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        edit_button.setToolTip("Edit Password")
+        edit_button.clicked.connect(lambda: self.edit_requested.emit(self._entry))
 
         delete_button = QPushButton(self)
         delete_button.setProperty("variant", "icon-btn-danger")
@@ -286,8 +299,9 @@ class EntryCard(QFrame):
         delete_button.setToolTip("Delete Password")
         delete_button.clicked.connect(lambda: self.delete_requested.emit(self._entry))
 
-        actions_col.addWidget(delete_button)
-        return actions_col
+        actions_layout.addWidget(edit_button)
+        actions_layout.addWidget(delete_button)
+        return actions_layout
 
     @classmethod
     def get_eye_icons(cls) -> tuple[QIcon, QIcon]:

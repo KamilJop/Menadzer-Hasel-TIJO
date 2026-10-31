@@ -210,7 +210,10 @@ class EntryDialog(QDialog):
         self._cancel_button.setProperty("variant", "minimal")
         self._cancel_button.clicked.connect(self.reject)
 
-        self._save_button = QPushButton("Save Password", self)
+        self._save_button = QPushButton(
+            "Save Changes" if self._existing_entry else "Save Password",
+            self,
+        )
         self._save_button.clicked.connect(self._on_save_clicked)
 
         actions_layout.addStretch()

@@ -48,6 +48,8 @@ class WelcomeWindow(QWidget):
             repository if repository is not None else VaultRepository()
         )
 
+        self.setObjectName("welcomeWindow")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setWindowTitle("Password Manager - Welcome")
         self.setFixedSize(480, 500)
         self._setup_ui()

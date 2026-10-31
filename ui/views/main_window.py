@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -94,9 +95,11 @@ class MainWindow(QMainWindow):
         self._repository: BaseVaultRepository | None = repository
         self._master_password: str | None = master_password
         self._selected_category: Category | None = None
+        self._search_query: str = ""
 
         icons_dir = Path(__file__).resolve().parent.parent / "resources" / "icons"
         self._check_icon: QIcon = QIcon(str(icons_dir / "check.svg"))
+        self._search_icon: QIcon = QIcon(str(icons_dir / "search.svg"))
 
         self._favicon_service: FaviconService = (
             favicon_service if favicon_service is not None else FaviconService(self)
@@ -114,6 +117,7 @@ class MainWindow(QMainWindow):
         self._sidebar: CategorySidebar
         self._content_layout: QVBoxLayout
         self._category_title_label: QLabel
+        self._search_input: QLineEdit
         self._lock_button: QPushButton
         self._entries_card: QFrame
         self._entries_card_layout: QVBoxLayout
@@ -201,11 +205,26 @@ class MainWindow(QMainWindow):
             Configured QHBoxLayout instance.
         """
         top_bar = QHBoxLayout()
+        top_bar.setSpacing(12)
+
         self._category_title_label = QLabel("All Items", parent)
         title_font = self._category_title_label.font()
         title_font.setPointSize(18)
         title_font.setBold(True)
         self._category_title_label.setFont(title_font)
+
+        self._search_input = QLineEdit(parent)
+        self._search_input.setObjectName("searchBar")
+        self._search_input.setProperty("variant", "search-bar")
+        self._search_input.setPlaceholderText("Search by title...")
+        self._search_input.setClearButtonEnabled(True)
+        self._search_input.addAction(
+            self._search_icon,
+            QLineEdit.ActionPosition.LeadingPosition,
+        )
+        self._search_input.textChanged.connect(self._on_search_text_changed)
+        self._search_input.setFixedWidth(240)
+        self._search_input.setFixedHeight(34)
 
         self._lock_button = QPushButton("Lock", parent)
         self._lock_button.setProperty("variant", "minimal")
@@ -213,6 +232,7 @@ class MainWindow(QMainWindow):
 
         top_bar.addWidget(self._category_title_label)
         top_bar.addStretch()
+        top_bar.addWidget(self._search_input)
         top_bar.addWidget(self._lock_button)
         return top_bar
 
@@ -396,24 +416,49 @@ class MainWindow(QMainWindow):
             if widget is not None:
                 widget.deleteLater()
 
+    def _on_search_text_changed(self, text: str) -> None:
+        """Filters displayed entries in real-time based on title substring match.
+
+        Args:
+            text: Query string entered by the user.
+        """
+        self._search_query = text.strip()
+        self._refresh_entries_view()
+
     def _get_active_entries(self) -> list[Entry]:
-        """Retrieves entries matching the active category filter.
+        """Retrieves entries matching the active category and title search query.
 
         Returns:
             List of matching Entry instances.
         """
         if self._vault is None:
             return []
+
         if self._selected_category is None:
-            return list(self._vault.entries)
-        return self._vault.get_entries_by_category(self._selected_category)
+            entries = list(self._vault.entries)
+        else:
+            entries = self._vault.get_entries_by_category(self._selected_category)
+
+        if self._search_query:
+            query = self._search_query.lower()
+            entries = [entry for entry in entries if query in entry.title.lower()]
+
+        return entries
 
     def _refresh_entries_view(self) -> None:
-        """Refreshes the entries card display based on active category selection."""
+        """Refreshes the entries card display based on active category and search filters."""
         self._clear_entries_list()
         entries = self._get_active_entries()
 
         if not entries:
+            if self._search_query:
+                self._empty_state_label.setText(
+                    f"No entries found matching '{self._search_query}'."
+                )
+            else:
+                self._empty_state_label.setText(
+                    "No entries found in this category.\nClick '+' below to get started."
+                )
             self._empty_state_label.setVisible(True)
             self._scroll_area.setVisible(False)
             return
@@ -442,6 +487,7 @@ class MainWindow(QMainWindow):
             parent=self._entries_container,
         )
         card.copy_requested.connect(self._on_copy_requested)
+        card.edit_requested.connect(self._edit_entry)
         card.delete_requested.connect(self._delete_entry)
         return card
 
@@ -457,6 +503,28 @@ class MainWindow(QMainWindow):
                 "Copied to clipboard. Auto-clearing in 30 seconds.",
                 icon=self._check_icon,
             )
+
+    def _edit_entry(self, entry: Entry) -> None:
+        """Opens modal entry dialog in edit mode to modify the specified credential.
+
+        Args:
+            entry: Entry instance to edit.
+        """
+        dialog = EntryDialog(
+            parent=self,
+            entry=entry,
+        )
+        if dialog.exec() == EntryDialog.DialogCode.Accepted:
+            updated_entry = dialog.get_entry()
+            if updated_entry is not None and self._vault is not None:
+                self._vault.update_entry(updated_entry)
+                self._save_vault()
+                self._update_sidebar_counts()
+                self._refresh_entries_view()
+                self._toast.show_message(
+                    f"Password '{updated_entry.title}' updated successfully.",
+                    icon=self._check_icon,
+                )
 
     def _delete_entry(self, entry: Entry, confirm: bool = True) -> None:
         """Prompts confirmation and removes the specified credential entry from vault.

@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QColor, QFont, QPalette
 from PyQt6.QtWidgets import QApplication, QWidget
 
 from core.vault import Vault
@@ -103,7 +103,7 @@ class AppController:
 
 
 def create_application() -> QApplication:
-    """Creates and configures the global QApplication instance.
+    """Creates and configures the global QApplication instance with dark theme palette.
 
     Returns:
         Configured QApplication instance.
@@ -113,6 +113,19 @@ def create_application() -> QApplication:
     app.setApplicationDisplayName("Password Manager")
     app.setOrganizationName("Yuris")
     app.setFont(QFont("Segoe UI", 10))
+
+    dark_palette = app.palette()
+    dark_palette.setColor(QPalette.ColorRole.Window, QColor("#121317"))
+    dark_palette.setColor(QPalette.ColorRole.WindowText, QColor("#f4f4f5"))
+    dark_palette.setColor(QPalette.ColorRole.Base, QColor("#18181b"))
+    dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#1f212d"))
+    dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("#18181b"))
+    dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor("#f4f4f5"))
+    dark_palette.setColor(QPalette.ColorRole.Text, QColor("#f4f4f5"))
+    dark_palette.setColor(QPalette.ColorRole.Button, QColor("#1f212d"))
+    dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor("#f4f4f5"))
+    app.setPalette(dark_palette)
+
     app.setStyleSheet(load_app_stylesheets())
     return app
 

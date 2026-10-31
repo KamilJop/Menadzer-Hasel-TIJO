@@ -49,6 +49,8 @@ class LoginWindow(QWidget):
             repository if repository is not None else VaultRepository()
         )
 
+        self.setObjectName("loginWindow")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setWindowTitle("Password Manager - Unlock")
         self.setFixedSize(460, 420)
         self._setup_ui()
