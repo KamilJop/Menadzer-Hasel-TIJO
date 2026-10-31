@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
-from PyQt6.QtGui import QColor, QFont, QPalette
+from PyQt6.QtGui import QColor, QFont, QIcon, QPalette
 from PyQt6.QtWidgets import QApplication, QWidget
 
 from core.vault import Vault
@@ -102,17 +102,47 @@ class AppController:
             self._active_window = None
 
 
+_APP_USER_MODEL_ID: str = "yuris.passwordmanager.app"
+
+
+def _configure_windows_taskbar_icon() -> None:
+    """Configures the explicit application user model ID on Windows platforms.
+
+    Ensures that the taskbar groups application windows properly and displays
+    the assigned window icon rather than the generic Python interpreter icon.
+    """
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                _APP_USER_MODEL_ID
+            )
+        except (AttributeError, OSError):
+            pass
+
+
 def create_application() -> QApplication:
-    """Creates and configures the global QApplication instance with dark theme palette.
+    """Creates and configures the global QApplication instance with dark theme and app icon.
+
+    Initializes the Windows taskbar application model ID if running on Windows,
+    sets global font and branding, loads the default window icon, and sets the dark palette.
 
     Returns:
         Configured QApplication instance.
     """
+    _configure_windows_taskbar_icon()
+
     app = QApplication(sys.argv)
     app.setApplicationName("Password Manager")
     app.setApplicationDisplayName("Password Manager")
     app.setOrganizationName("Yuris")
     app.setFont(QFont("Segoe UI", 10))
+
+    icons_dir = Path(__file__).resolve().parent / "resources" / "icons"
+    app_icon_path = icons_dir / "app_icon.svg"
+    if app_icon_path.exists():
+        app.setWindowIcon(QIcon(str(app_icon_path)))
 
     dark_palette = app.palette()
     dark_palette.setColor(QPalette.ColorRole.Window, QColor("#121317"))
