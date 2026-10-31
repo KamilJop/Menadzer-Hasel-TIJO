@@ -21,6 +21,8 @@ coverage.xml
 # Local development / temporary files
 *.tmp
 *.vault.tmp
+*.dat
+*.vault
 *.log
 
 # IDE & OS files
