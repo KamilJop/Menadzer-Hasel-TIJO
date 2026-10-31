@@ -84,6 +84,7 @@ class AppController:
             vault=vault,
             vault_path=path,
             repository=self._repository,
+            master_password=password,
         )
         window.vault_locked.connect(self._on_vault_locked)
         window.show()
