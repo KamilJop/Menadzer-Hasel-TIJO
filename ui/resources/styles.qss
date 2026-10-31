@@ -88,6 +88,31 @@ QPushButton[variant="minimal"] {
     font-weight: 500;
 }
 
+QPushButton#lockButton,
+QPushButton#exportButton,
+QPushButton#importButton {
+    background-color: transparent;
+    color: #a1a1aa;
+    border: 1px solid #3f3f46;
+    border-radius: 6px;
+    padding: 0;
+}
+
+QPushButton#lockButton:hover,
+QPushButton#exportButton:hover,
+QPushButton#importButton:hover {
+    background-color: #27272a;
+    border-color: #52525b;
+    color: #f4f4f5;
+}
+
+QPushButton#lockButton:pressed,
+QPushButton#exportButton:pressed,
+QPushButton#importButton:pressed {
+    background-color: #1f1f23;
+    border-color: #3f3f46;
+}
+
 /* Icon Action Button (e.g. copy, eye) */
 QPushButton[variant="icon-btn"] {
     background-color: #1f212d;
@@ -169,6 +194,40 @@ QLabel[variant="muted"] {
 QLabel[variant="error"] {
     color: #ef4444;
     font-size: 12px;
+}
+
+QLabel[variant="warning"] {
+    color: #fbbf24;
+    font-size: 12px;
+}
+
+QFrame[variant="warning-card"] {
+    background-color: #261e12;
+    border: 1px solid #78350f;
+    border-radius: 8px;
+}
+
+QRadioButton {
+    color: #f4f4f5;
+    font-size: 13px;
+    spacing: 8px;
+}
+
+QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    border: 1.5px solid #3f3f46;
+    background-color: #1a1b24;
+}
+
+QRadioButton::indicator:hover {
+    border-color: #6366f1;
+}
+
+QRadioButton::indicator:checked {
+    border: 4px solid #4f46e5;
+    background-color: #ffffff;
 }
 
 /* Entries Container Card */

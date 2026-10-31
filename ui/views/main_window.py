@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+import uuid
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon, QResizeEvent
 from PyQt6.QtWidgets import (
     QFrame,
@@ -28,7 +29,7 @@ from storage.interfaces import BaseVaultRepository
 from ui.services.clipboard_service import ClipboardService
 from ui.services.favicon_service import FaviconService
 from ui.utils import responsive_scale
-from ui.views.dialogs import EntryDialog
+from ui.views.dialogs import EntryDialog, ExportDialog, ImportDialog
 from ui.widgets.category_sidebar import CategorySidebar
 from ui.widgets.entry_card import EntryCard
 from ui.widgets.floating_action_button import FloatingActionButton
@@ -100,6 +101,9 @@ class MainWindow(QMainWindow):
         icons_dir = Path(__file__).resolve().parent.parent / "resources" / "icons"
         self._check_icon: QIcon = QIcon(str(icons_dir / "check.svg"))
         self._search_icon: QIcon = QIcon(str(icons_dir / "search.svg"))
+        self._lock_icon: QIcon = QIcon(str(icons_dir / "lock.svg"))
+        self._import_icon: QIcon = QIcon(str(icons_dir / "import.svg"))
+        self._export_icon: QIcon = QIcon(str(icons_dir / "export.svg"))
 
         self._favicon_service: FaviconService = (
             favicon_service if favicon_service is not None else FaviconService(self)
@@ -118,6 +122,8 @@ class MainWindow(QMainWindow):
         self._content_layout: QVBoxLayout
         self._category_title_label: QLabel
         self._search_input: QLineEdit
+        self._import_button: QPushButton
+        self._export_button: QPushButton
         self._lock_button: QPushButton
         self._entries_card: QFrame
         self._entries_card_layout: QVBoxLayout
@@ -226,13 +232,41 @@ class MainWindow(QMainWindow):
         self._search_input.setFixedWidth(240)
         self._search_input.setFixedHeight(34)
 
-        self._lock_button = QPushButton("Lock", parent)
+        self._import_button = QPushButton(parent)
+        self._import_button.setObjectName("importButton")
+        self._import_button.setProperty("variant", "minimal")
+        self._import_button.setIcon(self._import_icon)
+        self._import_button.setIconSize(QSize(18, 18))
+        self._import_button.setFixedSize(34, 34)
+        self._import_button.setToolTip("Import")
+        self._import_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._import_button.clicked.connect(self._on_import_clicked)
+
+        self._export_button = QPushButton(parent)
+        self._export_button.setObjectName("exportButton")
+        self._export_button.setProperty("variant", "minimal")
+        self._export_button.setIcon(self._export_icon)
+        self._export_button.setIconSize(QSize(18, 18))
+        self._export_button.setFixedSize(34, 34)
+        self._export_button.setToolTip("Export")
+        self._export_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._export_button.clicked.connect(self._on_export_clicked)
+
+        self._lock_button = QPushButton(parent)
+        self._lock_button.setObjectName("lockButton")
         self._lock_button.setProperty("variant", "minimal")
+        self._lock_button.setIcon(self._lock_icon)
+        self._lock_button.setIconSize(QSize(18, 18))
+        self._lock_button.setFixedSize(34, 34)
+        self._lock_button.setToolTip("Lock Passwords")
+        self._lock_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self._lock_button.clicked.connect(self._on_lock_clicked)
 
         top_bar.addWidget(self._category_title_label)
         top_bar.addStretch()
         top_bar.addWidget(self._search_input)
+        top_bar.addWidget(self._import_button)
+        top_bar.addWidget(self._export_button)
         top_bar.addWidget(self._lock_button)
         return top_bar
 
@@ -560,6 +594,52 @@ class MainWindow(QMainWindow):
     def _on_lock_clicked(self) -> None:
         """Slot handling vault locking request by emitting vault_locked signal."""
         self.vault_locked.emit()
+
+    def _on_export_clicked(self) -> None:
+        """Opens export modal dialog to backup credentials to an encrypted or plaintext JSON file."""
+        if self._vault is None or not self._vault.entries:
+            self._toast.show_message("No passwords available to export.")
+            return
+
+        dialog = ExportDialog(
+            entries=list(self._vault.entries),
+            parent=self,
+        )
+        if dialog.exec() == ExportDialog.DialogCode.Accepted:
+            exported_count = len(self._vault.entries)
+            saved_path = dialog.saved_path
+            dest_name = saved_path.name if saved_path is not None else "file"
+            self._toast.show_message(
+                f"Exported {exported_count} passwords to '{dest_name}'.",
+                icon=self._check_icon,
+            )
+
+    def _on_import_clicked(self) -> None:
+        """Opens import modal dialog to restore credentials from an encrypted or plaintext JSON file."""
+        if self._vault is None:
+            return
+
+        dialog = ImportDialog(parent=self)
+        if dialog.exec() == ImportDialog.DialogCode.Accepted:
+            imported_entries = dialog.get_imported_entries()
+            if not imported_entries:
+                self._toast.show_message("No credentials found in imported file.")
+                return
+
+            added_count = 0
+            for entry in imported_entries:
+                if self._vault.get_entry(entry.id) is not None:
+                    entry.id = str(uuid.uuid4())
+                self._vault.add_entry(entry)
+                added_count += 1
+
+            self._save_vault()
+            self._update_sidebar_counts()
+            self._refresh_entries_view()
+            self._toast.show_message(
+                f"Successfully imported {added_count} passwords.",
+                icon=self._check_icon,
+            )
 
 
 __all__ = [

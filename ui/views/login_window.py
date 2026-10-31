@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QLabel,
     QPushButton,
@@ -49,10 +50,13 @@ class LoginWindow(QWidget):
             repository if repository is not None else VaultRepository()
         )
 
+        icons_dir = Path(__file__).resolve().parent.parent / "resources" / "icons"
+        self._unlock_icon: QIcon = QIcon(str(icons_dir / "unlock.svg"))
+
         self.setObjectName("loginWindow")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setWindowTitle("Password Manager - Unlock")
-        self.setFixedSize(460, 420)
+        self.setFixedSize(460, 440)
         self._setup_ui()
 
     def _setup_ui(self) -> None:
@@ -62,6 +66,10 @@ class LoginWindow(QWidget):
         layout.setSpacing(14)
         layout.setContentsMargins(40, 40, 40, 40)
 
+        icon_label = QLabel(self)
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        icon_label.setPixmap(self._unlock_icon.pixmap(48, 48))
+
         header_label = QLabel("Welcome Back", self)
         header_font = header_label.font()
         header_font.setPointSize(20)
@@ -70,7 +78,7 @@ class LoginWindow(QWidget):
         header_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         subtitle_label = QLabel(
-            "Enter your password to unlock your vault.",
+            "Enter your password to unlock your passwords.",
             self,
         )
         subtitle_label.setProperty("variant", "muted")
@@ -84,9 +92,13 @@ class LoginWindow(QWidget):
         self._error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._error_label.setVisible(False)
 
-        self._unlock_button = QPushButton("Unlock Vault", self)
+        self._unlock_button = QPushButton("Unlock Passwords", self)
+        self._unlock_button.setIcon(self._unlock_icon)
+        self._unlock_button.setIconSize(QSize(18, 18))
         self._unlock_button.clicked.connect(self._unlock_vault)
 
+        layout.addWidget(icon_label)
+        layout.addSpacing(4)
         layout.addWidget(header_label)
         layout.addWidget(subtitle_label)
         layout.addSpacing(10)
@@ -118,7 +130,7 @@ class LoginWindow(QWidget):
             self._password_input.set_error(True)
             self._password_input.setFocus()
         except Exception as err:
-            self._show_error(f"Failed to load vault: {err}")
+            self._show_error(f"Failed to unlock passwords: {err}")
 
     def _show_error(self, message: str) -> None:
         """Displays error message banner.
