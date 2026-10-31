@@ -9,7 +9,8 @@ from PyQt6.QtGui import QColor, QFont, QIcon, QPalette
 from PyQt6.QtWidgets import QApplication, QWidget
 
 from core.vault import Vault
-from storage.interfaces import BaseVaultRepository
+from storage.interfaces import BaseVaultPathResolver, BaseVaultRepository
+from storage.path_resolver import VaultPathResolver
 from storage.repository import VaultRepository
 from ui.resources.style_loader import load_app_stylesheets
 from ui.views.login_window import LoginWindow
@@ -25,6 +26,7 @@ class AppController:
         app: QApplication,
         vault_path: Path | None = None,
         repository: BaseVaultRepository | None = None,
+        path_resolver: BaseVaultPathResolver | None = None,
     ) -> None:
         """Initializes the controller with application instance and vault file target.
 
@@ -32,10 +34,14 @@ class AppController:
             app: Active QApplication instance.
             vault_path: Optional explicit path for the vault storage file.
             repository: Optional persistence repository implementing BaseVaultRepository.
+            path_resolver: Optional path resolver implementing BaseVaultPathResolver.
         """
         self._app: QApplication = app
+        self._path_resolver: BaseVaultPathResolver = (
+            path_resolver if path_resolver is not None else VaultPathResolver()
+        )
         self._vault_path: Path = (
-            Path(vault_path).resolve() if vault_path is not None else Path("vault.dat").resolve()
+            Path(vault_path).resolve() if vault_path is not None else self._path_resolver.resolve_path()
         )
         self._repository: BaseVaultRepository = (
             repository if repository is not None else VaultRepository(default_path=self._vault_path)
@@ -140,9 +146,12 @@ def create_application() -> QApplication:
     app.setFont(QFont("Segoe UI", 10))
 
     icons_dir = Path(__file__).resolve().parent / "resources" / "icons"
-    app_icon_path = icons_dir / "app_icon.svg"
-    if app_icon_path.exists():
-        app.setWindowIcon(QIcon(str(app_icon_path)))
+    app_icon_ico = icons_dir / "app_icon.ico"
+    app_icon_svg = icons_dir / "app_icon.svg"
+    if app_icon_ico.exists():
+        app.setWindowIcon(QIcon(str(app_icon_ico)))
+    elif app_icon_svg.exists():
+        app.setWindowIcon(QIcon(str(app_icon_svg)))
 
     dark_palette = app.palette()
     dark_palette.setColor(QPalette.ColorRole.Window, QColor("#121317"))

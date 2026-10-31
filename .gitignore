@@ -25,6 +25,10 @@ coverage.xml
 *.vault
 *.log
 
+# PyInstaller build artifacts
+build/
+dist/
+
 # IDE & OS files
 .vscode/
 .idea/
